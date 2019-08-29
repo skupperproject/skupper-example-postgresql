@@ -1,0 +1,100 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgresql-svc
+  annotations:
+    proxy.skupper.github.com/network: skupper
+    proxy.skupper.github.com/protocol: tcp
+spec:
+  ports:
+  - port: 5432
+    targetPort: 5432
+  selector:
+    application: postgresql
+---
+apiVersion: v1
+data:
+  database-name: ZGVtb2Ri
+  database-password: c2t1cHBlcg==
+  database-user: cG9zdGdyZXM=
+kind: Secret
+metadata:
+  name: postgresql
+  labels:
+    application: postgresql
+type: Opaque
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata: 
+  name: postgresql
+spec:
+  replicas: 1
+  selectors:
+    matchLabels:
+      name: postgresql
+      application: postgresql
+  template:
+    metadata:
+      labels:
+        name: postgresql
+        application: postgresql
+    spec:
+      containers:
+        - env:
+          - name: POSTGRESQL_USER
+            valueFrom:
+              secretKeyRef:
+                key: database-user
+                name: postgresql
+          - name: POSTGRESQL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: database-password
+                name: postgresql
+          - name: POSTGRESQL_DATABASE
+            valueFrom:
+              secretKeyRef:
+                key: database-name
+                name: postgresql
+          image: rhscl/postgresql-10-rhel7
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            exec:
+              command:
+              - /usr/libexec/check-container
+              - --live
+            failureThreshold: 3
+            initialDelaySeconds: 120
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 10
+          name: postgresql
+          ports:
+          - containerPort: 5432
+            protocol: TCP
+          readinessProbe:
+            exec:
+              command:
+              - /usr/libexec/check-container
+            failureThreshold: 3
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources:
+            limits:
+              memory: 512Mi
+          volumeMounts:
+          - mountPath: /var/lib/pgsql/data
+            name: postgresql-data
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30            
+      volumes: 
+        - name: postgresql-data
+          emptyDir: {}
+

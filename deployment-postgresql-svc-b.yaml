@@ -1,0 +1,14 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgresql-svc
+  annotations:
+    proxy.skupper.github.com/network: skupper
+    proxy.skupper.github.com/protocol: tcp
+spec:
+  ports:
+  - port: 5432
+    targetPort: 5432
+  selector:
+    application: postgresql
