@@ -11,7 +11,8 @@ To complete this tutorial, do the following:
 * [Step 2: Deploy the Skupper Network](#step-2-deploy-the-skupper-network)
 * [Step 3: Deploy the PostgreSQL service](#step-3-deploy-the-postgresql-service)
 * [Step 4: Annotate PostgreSQL service to join the Skupper Network](#step-4-annotate-postgresql-service-to-join-the-skupper-network)
-* [Step 5: Access the database from client clusters](#step-5-access-the-database-from-client-clusters)
+* [Step 5: Deploy interactive Pod with Postgresql client utilities](#step-5-deploy-interactive-pod-with-postgresql-client-utilities)
+* [Step 6: Create a Database, Create a Table, Insert Values](#step-6-create-a-database-create-a-table-insert-values)
 * [Next steps](#next-steps)
 
 ## Prerequisites
@@ -30,7 +31,7 @@ While the detailed steps are not included here, this demonstration can alternati
    ```bash
    mkdir pg-demo
    cd pg-demo
-   git clone https://github.com:skupperproject/skupper-example-postgresql.git
+   git clone https://github.com/skupperproject/skupper-example-postgresql.git
    curl -fL https://github.com/skupperproject/skupper-cli/releases/download/0.0.1-beta/linux.tgz -o skupper.tgz
    mkdir -p $HOME/bin
    tar -xf skupper.tgz --directory $HOME/bin
@@ -107,29 +108,38 @@ After creating the application router network, deploy the PostgreSQL service. Th
    kubectl annotate service postgresql-svc skupper.io/proxy=tcp
    ```
 
-## Step 5: Access the database
+## Step 5: Create interactive pod with PostgreSQL client utilities
 
-After the PostgresSQL service is deployed to the Skupper Network from the private cluster, access the database from the public clusters.
-
-1. Create a database call 'markets' on the **private1** cluster
+1. From each cluster terminial, create a pod that contains the PostgreSQL client utilities:
 
    ```bash
-   export PGPASSWORD=skupper && \
-   createdb -h $(kubectl get service postgresql-svc -o=jsonpath='{.spec.clusterIP}') -U postgres -e markets
-
-   kubectl run --generator=run-pod/v1 pg-shell -i --tty --image quay.io/skupper/simple-pg --env="PGPASSWORD=skupper" -- createdb -h $(kubectl get service postgresql-svc -o=jsonpath='{.spec.clusterIP}') -U postgres -e markets
+   kubectl run --generator=run-pod/v1 pg-shell -i --tty --image quay.io/skupper/simple-pg \
+   --env="PGUSER=postgres" \
+   --env="PGPASSWORD=skupper" \
+   --env="PGHOST=$(kubectl get service postgresql-svc -o=jsonpath='{.spec.clusterIP}')" \
+   -- bash
    ```
 
-2. Create a table called 'product' in the 'markets' database on the **public1** cluster
-
-Create an interactive pod with PostgreSQL client utilities to access the database on the **private1** cluster:
+2. Note that if the session is ended, it can be resumed with the following:
 
    ```bash
-   kubectl run --generator=run-pod/v1 pg-shell -i --tty --image quay.io/skupper/simple-pg --env="PGPASSWORD=skupper" -- psql -h $(kubectl get service postgresql-svc -o=jsonpath='{.spec.clusterIP}') -U postgres -d markets
+   kubectl attach pg-shell -c pg-shell -i -t
    ```
-And create a table in the database:
+
+## Step 6: Create a Database, Create a Table, Insert Values
+
+Using the 'pg-shell' pod running on each cluster, operate on the database:
+
+1. Create a database called 'markets' from the **private1** cluster
 
    ```bash
+   bash-5.0$ createdb -e markets
+   ```
+
+2. Create a table called 'product' in the 'markets' database from the **public1** cluster
+
+   ```bash
+   bash-5.0$ psql -d markets
    markets# create table if not exists product (
               id              SERIAL,
               name            VARCHAR(100) NOT NULL,
@@ -137,17 +147,10 @@ And create a table in the database:
               );
    ```
 
-3. Insert values into the `product` table in the `markets` database on the **public2** cluster:
-
-Create an interactive pod with PostgreSQL client utilities to access the database on the **private1** cluster:
+3. Insert values into the `product` table in the `markets` database from the **public2** cluster:
 
    ```bash
-   kubectl run --generator=run-pod/v1 pg-shell -i --tty --image quay.io/skupper/simple-pg --env="PGPASSWORD=skupper" -- psql -h $(kubectl get service postgresql-svc -o=jsonpath='{.spec.clusterIP}') -U postgres -d markets
-   ```
-
-And insert values into the table in the database:
-
-   ```bash
+   bash-5.0$ psql -d markets
    markets# INSERT INTO product VALUES(DEFAULT, 'Apple, Fuji', '4131');
    markets# INSERT INTO product VALUES(DEFAULT, 'Banana', '4011');
    markets# INSERT INTO product VALUES(DEFAULT, 'Pear, Bartlett', '4214');
@@ -156,17 +159,11 @@ And insert values into the table in the database:
 
 4. From any cluster, access the `product` tables in the `markets` database to view contents
 
-Create an interactive pod with PostgreSQL client utilities (or use active one from above):
-
    ```bash
-   kubectl run --generator=run-pod/v1 pg-shell -i --tty --image quay.io/skupper/simple-pg --env="PGPASSWORD=skupper" -- psql -h $(kubectl get service postgresql-svc -o=jsonpath='{.spec.clusterIP}') -U postgres -d markets
-   ```
-
-And view the table contents:
-
-   ```bash
+   bash-5.0$ psql -d markets
    markets# SELECT * FROM product;
    ```
+
 ## Next steps
 
 Restore your cluster environment by returning the resources created in the demonstration. On each cluster, delete the demo resources and the skupper network:
@@ -174,6 +171,7 @@ Restore your cluster environment by returning the resources created in the demon
 1. In the terminal for the **public1** cluster, delete the resources:
 
    ```bash
+   $ kubectl delete pod pg-shell
    $ kubectl delete -f ~/pg-demo/skupper-example-postgresql/deployment-postgresql-svc-b.yaml
    $ skupper delete
    ```
@@ -181,6 +179,7 @@ Restore your cluster environment by returning the resources created in the demon
 2. In the terminal for the **public2** cluster, delete the resources:
 
    ```bash
+   $ kubectl delete pod pg-shell
    $ kubectl delete -f ~/pg-demo/skupper-example-postgresql/deployment-postgresql-svc-b.yaml
    $ skupper delete
    ```
@@ -188,6 +187,7 @@ Restore your cluster environment by returning the resources created in the demon
 3. In the terminal for the **private1** cluster, delete the resources:
 
    ```bash
+   $ kubectl delete pod pg-shell
    $ kubectl delete -f ~/pg-demo/skupper-example-postgresql/deployment-postgresql-svc-a.yaml
    $ skupper delete
    ```
