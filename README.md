@@ -2,98 +2,192 @@
 
 This tutorial demonstrates how to share a PostgreSQL database across multiple Kubernetes clusters that are located in different public and private cloud providers.
 
-In this tutorial, you will deploy a PostgreSQL database instance in a private cluster. You will also create and application router network, which will enable clients on different clusters to transparently access the database without the need for additional networking setup (e.g. no vpn or sdn required).
+In this tutorial, you will deploy a PostgreSQL database instance to a private cluster. You will also create and application router network, which will enable clients on different public clusters to transparently access the database without the need for additional networking setup (e.g. no vpn or sdn required).
 
 To complete this tutorial, do the following:
 
 * [Prerequisites](#prerequisites)
 * [Step 1: Set up the demo](#step-1-set-up-the-demo)
-* [Step 2: Deploy Application Router Network](#step-2-deploy-application-router-network)
+* [Step 2: Deploy the Skupper Network](#step-2-deploy-the-skupper-network)
 * [Step 3: Deploy the PostgreSQL service](#step-3-deploy-the-postgresql-service)
-* [Step 4: Access the database from client clusters](#step-4-access-the-database-from-client-clusters)
+* [Step 4: Annotate PostgreSQL service to join the Skupper Network](#step-4-annotate-postgresql-service-to-join-the-skupper-network)
+* [Step 5: Access the database from client clusters](#step-5-access-the-database-from-client-clusters)
 * [Next steps](#next-steps)
 
 ## Prerequisites
 
-You must have access to two OpenShift clusters:
+The basis for the demonstration is to depict the operation of a PostgreSQL database in a private cluster and the ability to access the database from clients resident on other public clusters. As an example, the cluster deployment might be comprised of:
+
 * A "private cloud" cluster running on your local machine
-* A public cloud cluster running on  a public cloud provider
+* Two public cloud clusters running in public cloud providers
+
+While the detailed steps are not included here, this demonstration can alternatively be performed with three separate namespaces on a single cluster.
 
 ## Step 1: Set up the demo
 
 1. On your local machine, make a directory for this tutorial, clone the example repo, and download the skupper-cli tool:
 
    ```bash
-   $ mkdir postgresql-demo
-   $ cd postgresql-demo
-   $ git clone git@github.com:skupperproject/skupper-example-postgresql.git # for deploying the PostgreSQL service
-   $ wget https://github.com/skupperproject/skupper-cli/releases/download/dummy/linux.tgz -O - | tar -xzf - # cli for application router network
+   mkdir pg-demo
+   cd pg-demo
+   git clone https://github.com:skupperproject/skupper-example-postgresql.git
+   curl -fL https://github.com/skupperproject/skupper-cli/releases/download/0.0.1-beta/linux.tgz -o skupper.tgz
+   mkdir -p $HOME/bin
+   tar -xf skupper.tgz --directory $HOME/bin
+   export PATH=$PATH:$HOME/bin
    ```
 
-3. Prepare the OpenShift clusters.
-
-   1. Log in to each OpenShift cluster in a separate terminal session. You should have one local cluster running (e.g. on your machine) and one clusters running in a public cloud provider.
-   2. In each cluster, create a namespace for this demo.
-  
-      ```bash
-      $ oc new-project postgresql-demo
-      ```
-
-## Step 2: Deploy Application Router Network
-
-On each cluster, define the application router role and connectivity to peer clusters.
-
-1. In the terminal for the public cluster, deploy the *public1* application router, and create its secrets:
+   To test your installation, run the 'skupper' command with no arguments. It will print a usage summary.
 
    ```bash
-   $ ~/postgresql-demo/skupper init --hub --name public1
-   $ ~/postgresql-demo/skupper secret --file ~/postgresql-demo/private1-to-public1-secret.yaml --subject private1
+   $ skupper
+   usage: skupper <command> <args>
+   [...]
    ```
 
-2. In the terminal for the private cluster, deploy the *private1* application router and define its connections to the public cluster
+3. Prepare the target clusters.
+
+   1. On your local machine, log in to each cluster in a separate terminal session.
+   2. In each cluster, create a namespace to use for the demo.
+   3. In each cluster, set the kubectl config context to use the demo namespace [(see kubectl cheat sheet)](https://kubernetes.io/docs/reference/kubectl/cheatsheet/)
+
+## Step 2: Deploy the Skupper Network
+
+On each cluster, define the Skupper network and the connectivity for the peer clusters.
+
+1. In the terminal for the first public cluster, deploy the **public1** application router. Create two connection tokens for connections from the **public2** cluster and the **private1** cluster:
 
    ```bash
-   $ ~/postgresql-demo/skupper init --name private1
-   $ ~/postgresql-demo/skupper connect --secret ~/postgresql-demo/private1-to-public1-secret.yaml --name public1
+   skupper init --id public1
+   skupper connection-token private1-to-public1-token.yaml
+   skupper connection-token public2-to-public1-token.yaml
+   ```
+
+2. In the terminal for the second public cluster, deploy the **public2** application router, and connect to the **public1** cluster:
+
+   ```bash
+   skupper init --id public2
+   skupper connect public2-to-public1-token.yaml
+   ```
+
+3. In the terminal for the private cluster, deploy the **private1** application router and define its connections to the **public1** cluster
+
+   ```bash
+   skupper init --edge --id private1
+   skupper connect private1-to-public1-token.yaml
    ```
    
 ## Step 3: Deploy the PostgreSQL service
 
-After creating the application router network, deploy the PostgreSQL service. The private1 cluster will be used to deploy the PostgreSQL server and the public1 clusters will be used to enable client communications to the server on the private1 cluster.
+After creating the application router network, deploy the PostgreSQL service. The **private1** cluster will be used to deploy the PostgreSQL server and the **public1** and **public2** clusters will be used to enable client communications to the server on the **private1** cluster.
 
-The `~/postgresql-demo/skupper-example-postgresql` directory contains the YAML files that you will use to create the service.
-
-1. In the terminal for the *private1* cluster, deploy the following:
+1. In the terminal for the **public1** cluster, deploy the following:
 
    ```bash
-   $ oc apply -f ~/postgresql-demo/skupper-example-postgresql/deployment-postgresql-svc-a.yaml
+   kubectl apply -f ~/pg-demo/skupper-example-postgresql/deployment-postgresql-svc-b.yaml
    ```
 
-2. In the terminal for the *public1* cluster where the PostgreSQL server will be created, deploy the following:
+2. In the terminal for the **public2** cluster where the PostgreSQL server will be created, deploy the following:
 
    ```bash
-   $ oc apply -f ~/postgresql-demo/skupper-example-postgresql/deployment-postgresql-svc-b.yaml
+   kubectl apply -f ~/pg-demo/skupper-example-postgresql/deployment-postgresql-svc-b.yaml
    ```
 
-## Step 4: Access the database
+3. In the terminal for the **private1** cluster where the PostgreSQL server will be created, deploy the following:
 
-After deploying the postgresql services into the private and public cloud clusters, access the database...
+   ```bash
+   kubectl apply -f ~/pg-demo/skupper-example-postgresql/deployment-postgresql-svc-a.yaml
+   ```
 
-- createdb -h $(oc get service postgresql-svc -o=jsonpath='{.spec.clusterIP}') -U postgres -e markets
-- psql -h $(oc get service mongo-svc-a -o=jsonpath='{.spec.clusterIP}') -U postgres
-- 
-#\c markets
-create table if not exists product (
-  id              SERIAL,
-  name            VARCHAR(100) NOT NULL,
-  sku             CHAR(8)
-);
-INSERT INTO product VALUES(DEFAULT, 'Apple, Fuji', '4131');
-INSERT INTO product VALUES(DEFAULT, 'Banana', '4011');
-SELECT * FROM product;
+## Step 4: Annotate PostgreSQL service to join to the Skupper Network
 
-- Web front end??
+1. In the terminal for the **private1** cluster, annotate the postgresql-svc service:
 
+   ```bash
+   kubectl annotate service postgresql-svc skupper.io/proxy=tcp
+   ```
+
+## Step 5: Access the database
+
+After the PostgresSQL service is deployed to the Skupper Network from the private cluster, access the database from the public clusters.
+
+1. Create a database call 'markets' on the **private1** cluster
+
+   ```bash
+   export PGPASSWORD=skupper && \
+   createdb -h $(kubectl get service postgresql-svc -o=jsonpath='{.spec.clusterIP}') -U postgres -e markets
+
+   kubectl run --generator=run-pod/v1 pg-shell -i --tty --image quay.io/skupper/simple-pg --env="PGPASSWORD=skupper" -- createdb -h $(kubectl get service postgresql-svc -o=jsonpath='{.spec.clusterIP}') -U postgres -e markets
+   ```
+
+2. Create a table called 'product' in the 'markets' database on the **public1** cluster
+
+Create an interactive pod with PostgreSQL client utilities to access the database on the **private1** cluster:
+
+   ```bash
+   kubectl run --generator=run-pod/v1 pg-shell -i --tty --image quay.io/skupper/simple-pg --env="PGPASSWORD=skupper" -- psql -h $(kubectl get service postgresql-svc -o=jsonpath='{.spec.clusterIP}') -U postgres -d markets
+   ```
+And create a table in the database:
+
+   ```bash
+   markets# create table if not exists product (
+              id              SERIAL,
+              name            VARCHAR(100) NOT NULL,
+              sku             CHAR(8)
+              );
+   ```
+
+3. Insert values into the `product` table in the `markets` database on the **public2** cluster:
+
+Create an interactive pod with PostgreSQL client utilities to access the database on the **private1** cluster:
+
+   ```bash
+   kubectl run --generator=run-pod/v1 pg-shell -i --tty --image quay.io/skupper/simple-pg --env="PGPASSWORD=skupper" -- psql -h $(kubectl get service postgresql-svc -o=jsonpath='{.spec.clusterIP}') -U postgres -d markets
+   ```
+
+And insert values into the table in the database:
+
+   ```bash
+   markets# INSERT INTO product VALUES(DEFAULT, 'Apple, Fuji', '4131');
+   markets# INSERT INTO product VALUES(DEFAULT, 'Banana', '4011');
+   markets# INSERT INTO product VALUES(DEFAULT, 'Pear, Bartlett', '4214');
+   markets# INSERT INTO product VALUES(DEFAULT, 'Orange', '4056');
+   ```
+
+4. From any cluster, access the `product` tables in the `markets` database to view contents
+
+Create an interactive pod with PostgreSQL client utilities (or use active one from above):
+
+   ```bash
+   kubectl run --generator=run-pod/v1 pg-shell -i --tty --image quay.io/skupper/simple-pg --env="PGPASSWORD=skupper" -- psql -h $(kubectl get service postgresql-svc -o=jsonpath='{.spec.clusterIP}') -U postgres -d markets
+   ```
+
+And view the table contents:
+
+   ```bash
+   markets# SELECT * FROM product;
+   ```
 ## Next steps
 
-TODO: describe what the user should do after completing this tutorial
+Restore your cluster environment by returning the resources created in the demonstration. On each cluster, delete the demo resources and the skupper network:
+
+1. In the terminal for the **public1** cluster, delete the resources:
+
+   ```bash
+   $ kubectl delete -f ~/pg-demo/skupper-example-postgresql/deployment-postgresql-svc-b.yaml
+   $ skupper delete
+   ```
+
+2. In the terminal for the **public2** cluster, delete the resources:
+
+   ```bash
+   $ kubectl delete -f ~/pg-demo/skupper-example-postgresql/deployment-postgresql-svc-b.yaml
+   $ skupper delete
+   ```
+
+3. In the terminal for the **private1** cluster, delete the resources:
+
+   ```bash
+   $ kubectl delete -f ~/pg-demo/skupper-example-postgresql/deployment-postgresql-svc-a.yaml
+   $ skupper delete
+   ```
