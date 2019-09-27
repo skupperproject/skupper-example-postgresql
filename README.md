@@ -32,7 +32,7 @@ While the detailed steps are not included here, this demonstration can alternati
    mkdir pg-demo
    cd pg-demo
    git clone https://github.com/skupperproject/skupper-example-postgresql.git
-   curl -fL https://github.com/skupperproject/skupper-cli/releases/download/0.0.1-beta/linux.tgz -o skupper.tgz
+   curl -fL https://github.com/skupperproject/skupper-cli/releases/download/0.0.1-beta3/linux.tgz -o skupper.tgz
    mkdir -p $HOME/bin
    tar -xf skupper.tgz --directory $HOME/bin
    export PATH=$PATH:$HOME/bin
@@ -68,6 +68,7 @@ On each cluster, define the Skupper network and the connectivity for the peer cl
 
    ```bash
    skupper init --id public2
+   skupper connection-token private1-to-public2-token.yaml
    skupper connect public2-to-public1-token.yaml
    ```
 
@@ -76,6 +77,7 @@ On each cluster, define the Skupper network and the connectivity for the peer cl
    ```bash
    skupper init --edge --id private1
    skupper connect private1-to-public1-token.yaml
+   skupper connect private1-to-public2-token.yaml
    ```
    
 ## Step 3: Deploy the PostgreSQL service
