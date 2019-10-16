@@ -8,14 +8,18 @@ To complete this tutorial, do the following:
 
 * [Prerequisites](#prerequisites)
 * [Step 1: Set up the demo](#step-1-set-up-the-demo)
-* [Step 2: Deploy the Skupper Network](#step-2-deploy-the-skupper-network)
+* [Step 2: Deploy the Virtual Application Network](#step-2-deploy-the-virtual-application-network)
 * [Step 3: Deploy the PostgreSQL service](#step-3-deploy-the-postgresql-service)
-* [Step 4: Annotate PostgreSQL service to join the Skupper Network](#step-4-annotate-postgresql-service-to-join-the-skupper-network)
+* [Step 4: Annotate PostgreSQL service to join the Virtual Application Network](#step-4-annotate-postgresql-service-to-join-the-virtual-application-network)
 * [Step 5: Deploy interactive Pod with Postgresql client utilities](#step-5-deploy-interactive-pod-with-postgresql-client-utilities)
 * [Step 6: Create a Database, Create a Table, Insert Values](#step-6-create-a-database-create-a-table-insert-values)
+* [Cleaning up](#cleaning-up)
 * [Next steps](#next-steps)
 
 ## Prerequisites
+
+* The `kubectl` command-line tool, version 1.15 or later ([installation guide](https://kubernetes.io/docs/tasks/tools/install-kubectl/))
+* The `skupper` command-line tool, the latest version ([installation guide](https://skupper.io/start/index.html#step-1-install-the-skupper-command-line-tool-in-your-environment))
 
 The basis for the demonstration is to depict the operation of a PostgreSQL database in a private cluster and the ability to access the database from clients resident on other public clusters. As an example, the cluster deployment might be comprised of:
 
@@ -26,35 +30,23 @@ While the detailed steps are not included here, this demonstration can alternati
 
 ## Step 1: Set up the demo
 
-1. On your local machine, make a directory for this tutorial, clone the example repo, and download the skupper-cli tool:
+1. On your local machine, make a directory for this tutorial and clone the example repo:
 
    ```bash
    mkdir pg-demo
    cd pg-demo
    git clone https://github.com/skupperproject/skupper-example-postgresql.git
-   curl -fL https://github.com/skupperproject/skupper-cli/releases/download/0.0.1-beta3/linux.tgz -o skupper.tgz
-   mkdir -p $HOME/bin
-   tar -xf skupper.tgz --directory $HOME/bin
-   export PATH=$PATH:$HOME/bin
    ```
 
-   To test your installation, run the 'skupper' command with no arguments. It will print a usage summary.
-
-   ```bash
-   $ skupper
-   usage: skupper <command> <args>
-   [...]
-   ```
-
-3. Prepare the target clusters.
+2. Prepare the target clusters.
 
    1. On your local machine, log in to each cluster in a separate terminal session.
    2. In each cluster, create a namespace to use for the demo.
    3. In each cluster, set the kubectl config context to use the demo namespace [(see kubectl cheat sheet)](https://kubernetes.io/docs/reference/kubectl/cheatsheet/)
 
-## Step 2: Deploy the Skupper Network
+## Step 2: Deploy the Virtual Application Network
 
-On each cluster, define the Skupper network and the connectivity for the peer clusters.
+On each cluster, define the virtual application network and the connectivity for the peer clusters.
 
 1. In the terminal for the first public cluster, deploy the **public1** application router. Create two connection tokens for connections from the **public2** cluster and the **private1** cluster:
 
@@ -102,7 +94,7 @@ After creating the application router network, deploy the PostgreSQL service. Th
    kubectl apply -f ~/pg-demo/skupper-example-postgresql/deployment-postgresql-svc-a.yaml
    ```
 
-## Step 4: Annotate PostgreSQL service to join to the Skupper Network
+## Step 4: Annotate PostgreSQL service to join to the Virtual Application Network
 
 1. In the terminal for the **private1** cluster, annotate the postgresql-svc service:
 
@@ -166,9 +158,9 @@ Using the 'pg-shell' pod running on each cluster, operate on the database:
    markets# SELECT * FROM product;
    ```
 
-## Next steps
+## Cleaning Up
 
-Restore your cluster environment by returning the resources created in the demonstration. On each cluster, delete the demo resources and the skupper network:
+Restore your cluster environment by returning the resources created in the demonstration. On each cluster, delete the demo resources and the virtual application network:
 
 1. In the terminal for the **public1** cluster, delete the resources:
 
@@ -193,3 +185,8 @@ Restore your cluster environment by returning the resources created in the demon
    $ kubectl delete -f ~/pg-demo/skupper-example-postgresql/deployment-postgresql-svc-a.yaml
    $ skupper delete
    ```
+
+## Next steps
+
+ - [Try the example for multi-cluster MongoDB replica set deployment](https://github.com/skupperproject/skupper-example-mongodb-replica-set)
+ - [Find more examples](https://skupper.io/examples/)
