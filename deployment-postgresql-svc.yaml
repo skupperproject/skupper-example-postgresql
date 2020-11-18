@@ -11,12 +11,15 @@ metadata:
     application: postgresql
 type: Opaque
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata: 
   name: postgresql
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      application: postgresql
   template:
     metadata:
       labels:
@@ -40,7 +43,7 @@ spec:
               secretKeyRef:
                 key: database-name
                 name: postgresql
-          image: rhscl/postgresql-10-rhel7
+          image: centos/postgresql-10-centos7
           imagePullPolicy: IfNotPresent
           livenessProbe:
             exec:

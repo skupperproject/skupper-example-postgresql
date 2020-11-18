@@ -66,7 +66,7 @@ On each cluster, define the virtual application network and the connectivity for
 3. In the terminal for the private cluster, deploy the **private1** application router and define its connections to the **public1** and **public2** cluster
 
    ```bash
-   skupper init --edge --site-name private1
+   skupper init --site-name private1
    skupper connect public1-token.yaml
    skupper connect public2-token.yaml
    ```
@@ -108,7 +108,7 @@ After creating the application router network, deploy the PostgreSQL service. Th
 1. From each cluster terminial, create a pod that contains the PostgreSQL client utilities:
 
    ```bash
-   kubectl run --generator=run-pod/v1 pg-shell -i --tty --image quay.io/skupper/simple-pg \
+   kubectl run pg-shell -i --tty --image quay.io/skupper/simple-pg \
    --env="PGUSER=postgres" \
    --env="PGPASSWORD=skupper" \
    --env="PGHOST=$(kubectl get service postgresql -o=jsonpath='{.spec.clusterIP}')" \
