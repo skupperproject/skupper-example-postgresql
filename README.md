@@ -19,7 +19,7 @@ To complete this tutorial, do the following:
 ## Prerequisites
 
 * The `kubectl` command-line tool, version 1.15 or later ([installation guide](https://kubernetes.io/docs/tasks/tools/install-kubectl/))
-* The `skupper` command-line tool, the latest version ([installation guide](https://skupper.io/start/index.html#step-1-install-the-skupper-command-line-tool-in-your-environment))
+* The `skupper` command-line tool, version 0.5 or later ([installation guide](https://skupper.io/start/index.html#step-1-install-the-skupper-command-line-tool-in-your-environment))
 
 The basis for the demonstration is to depict the operation of a PostgreSQL database in a private cluster and the ability to access the database from clients resident on other public clusters. As an example, the cluster deployment might be comprised of:
 
@@ -52,29 +52,29 @@ On each cluster, define the virtual application network and the connectivity for
 
    ```bash
    skupper init --site-name public1
-   skupper connection-token public1-token.yaml
+   skupper token create public1-token.yaml
    ```
 
-2. In the terminal for the second public cluster, deploy the **public2** application router, create a connection token for a connection from the **private1** cluster and connect to the **public1** cluster:
+2. In the terminal for the second public cluster, deploy the **public2** application router, create a connection token for a connection from the **private1** cluster and link to the **public1** cluster:
 
    ```bash
    skupper init --site-name public2
-   skupper connection-token public2-token.yaml
-   skupper connect public1-token.yaml
+   skupper token create public2-token.yaml
+   skupper link create public1-token.yaml
    ```
 
-3. In the terminal for the private cluster, deploy the **private1** application router and define its connections to the **public1** and **public2** cluster
+3. In the terminal for the private cluster, deploy the **private1** application router and create its links to the **public1** and **public2** cluster
 
    ```bash
    skupper init --site-name private1
-   skupper connect public1-token.yaml
-   skupper connect public2-token.yaml
+   skupper link create public1-token.yaml
+   skupper link create public2-token.yaml
    ```
 
 4. In each of the cluster terminals, verify connectivity has been established
 
    ```bash
-   skupper check-connection all
+   skupper link status
    ```
 
 ## Step 3: Deploy the PostgreSQL service
@@ -87,23 +87,39 @@ After creating the application router network, deploy the PostgreSQL service. Th
    kubectl apply -f ~/pg-demo/skupper-example-postgresql/deployment-postgresql-svc.yaml
    ```
 
-## Step 4: Expose the PostgreSQL deployment to the Virtual Application Network
+## Step 4: Create Skupper service for the Virtual Application Network
 
 1. In the terminal for the **private1** cluster, expose the postgresql-svc service:
 
    ```bash
-   skupper expose deployment postgresql --address postgresql --port 5432 --protocol tcp --target-port 5432
+   skupper service create postgresql 5432
    ```
 
-2. In each of the cluster terminals, verify the exposed service is present
+2. In each of the cluster terminals, verify the service created is present
 
    ```bash
-   skupper list-exposed
+   skupper service status
    ```
 
-    Note that the **private1** cluster provides the target.
+    Note that the mapping for the service address defaults to `tcp`.
 
-## Step 5: Create interactive pod with PostgreSQL client utilities
+## Step 5: Bind the Skupper service to the deployment target on the Virtual Application Network
+
+1. In the terminal for the **private1** cluster, expose the postgresql-svc service:
+
+   ```bash
+   skupper service bind postgresql deployment postgresql
+   ```
+
+2. In the **private1** cluster terminal, verify the service bind to the target
+
+   ```bash
+   skupper service status
+   ```
+
+    Note that the **private1** is the only cluster to provide a target.
+
+## Step 6: Create interactive pod with PostgreSQL client utilities
 
 1. From each cluster terminial, create a pod that contains the PostgreSQL client utilities:
 
@@ -121,7 +137,7 @@ After creating the application router network, deploy the PostgreSQL service. Th
    kubectl attach pg-shell -c pg-shell -i -t
    ```
 
-## Step 6: Create a Database, Create a Table, Insert Values
+## Step 7: Create a Database, Create a Table, Insert Values
 
 Using the 'pg-shell' pod running on each cluster, operate on the database:
 
