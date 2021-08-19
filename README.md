@@ -19,7 +19,7 @@ To complete this tutorial, do the following:
 ## Prerequisites
 
 * The `kubectl` command-line tool, version 1.15 or later ([installation guide](https://kubernetes.io/docs/tasks/tools/install-kubectl/))
-* The `skupper` command-line tool, version 0.5 or later ([installation guide](https://skupper.io/start/index.html#step-1-install-the-skupper-command-line-tool-in-your-environment))
+* The `skupper` command-line tool, version 0.7 or later ([installation guide](https://skupper.io/start/index.html#step-1-install-the-skupper-command-line-tool-in-your-environment))
 
 The basis for the demonstration is to depict the operation of a PostgreSQL database in a private cluster and the ability to access the database from clients resident on other public clusters. As an example, the cluster deployment might be comprised of:
 
@@ -52,7 +52,7 @@ On each cluster, define the virtual application network and the connectivity for
 
    ```bash
    skupper init --site-name public1
-   skupper token create public1-token.yaml
+   skupper token create --uses=2 public1-token.yaml
    ```
 
 2. In the terminal for the second public cluster, deploy the **public2** application router, create a connection token for a connection from the **private1** cluster and link to the **public1** cluster:
