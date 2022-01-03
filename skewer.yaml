@@ -1,0 +1,141 @@
+title: "PostgreSQL Example"
+subtitle: "Sharing a PostgreSQL database across clusters"
+github_actions_url: "https://github.com/skupperproject/skupper-example-postgresql/actions/workflows/main.yaml"
+overview: |
+  This tutorial demonstrates how to share a PostgreSQL database across multiple Kubernetes clusters that are located in 
+  different public and private cloud providers.
+prerequisites: !string prerequisites
+contexts:
+  private1:
+    kubeconfig: ~/.kube/private1
+    namespace: private
+  public1:
+    kubeconfig: ~/.kube/public1
+    namespace: public1
+  public2:
+    kubeconfig: ~/.kube/public2
+    namespace: public2
+steps:
+  - title: Access your clusters
+    preamble: !string access_your_clusters_preamble
+    commands:
+      public1:
+        - run: export KUBECONFIG=~/.kube/public1
+      public2:
+        - run: export KUBECONFIG=~/.kube/public2
+      private1:
+        - run: export KUBECONFIG=~/.kube/private1
+  - title: Set up namespaces
+    preamble: !string set_up_your_namespaces_preamble
+    commands:
+      public1:
+        - run: kubectl create namespace public1
+        - run: kubectl config set-context --current --namespace public1
+      public2:
+        - run: kubectl create namespace public2
+        - run: kubectl config set-context --current --namespace public2
+      private1:
+        - run: kubectl create namespace private1
+        - run: kubectl config set-context --current --namespace private1
+  - title: Deploy the Virtual Application Network
+    preamble: !string link_your_namespaces_preamble
+    commands:
+      public1:
+        - run: skupper init --site-name public1
+        - run: skupper token create --uses 2 ~/public1-token.yaml
+      public2:
+        - run: skupper init --site-name public2
+        - run: skupper token create ~/public2-token.yaml
+        - run: skupper link create ~/public1-token.yaml
+        - run: skupper link status --wait 30
+      private1:
+        - run: skupper init --site-name private1
+        - run: skupper link create ~/public1-token.yaml
+        - run: skupper link create ~/public2-token.yaml
+        - run: skupper link status --wait 30
+    postamble: !string link_your_namespaces_postamble
+  - title: Deploy the PostgreSQL service
+    preamble: |
+      After creating the application router network, deploy the PostgreSQL service. 
+      The **private1** cluster will be used to deploy the PostgreSQL server and the **public1** 
+      and **public2** clusters will be used to enable client communications to the server on 
+      the **private1** cluster.
+    commands:
+      private1:
+        - run: mkdir pg-demo
+        - run: cd pg-demo
+        - run: git clone https://github.com/skupperproject/skupper-example-postgresql.git
+        - run: kubectl apply -f ~/pg-demo/skupper-example-postgresql/deployment-postgresql-svc.yaml
+          await: [deployment/postgresql]
+  - title: Create Skupper service for the Virtual Application Network
+    commands:
+      private1:
+        - run: skupper service create postgresql 5432
+      public1:
+        - run: skupper service status
+      public2:
+        - run: skupper service status
+    postamble: |
+      Note that the mapping for the service address defaults to `tcp`.
+  - title: Bind the Skupper service to the deployment target on the Virtual Application Network
+    commands:
+      private1:
+        - run: skupper service bind postgresql deployment postgresql
+      public1:
+        - run: skupper service status
+      public2:
+        - run: skupper service status
+    postamble: |
+      Note that the **private1** is the only cluster to provide a target.
+  - title: Create interactive pod with PostgreSQL client utilities
+    commands:
+      private1:
+        - run: "kubectl run pg-shell -i --tty --image quay.io/skupper/simple-pg --env=\"PGUSER=postgres\" --env=\"PGPASSWORD=skupper\" --env=\"PGHOST=$(kubectl get service postgresql -o=jsonpath='{.spec.clusterIP}')\" -- bash"
+      public1:
+        - run: "kubectl run pg-shell -i --tty --image quay.io/skupper/simple-pg --env=\"PGUSER=postgres\" --env=\"PGPASSWORD=skupper\" --env=\"PGHOST=$(kubectl get service postgresql -o=jsonpath='{.spec.clusterIP}')\" -- bash"
+      public2:
+        - run: "kubectl run pg-shell -i --tty --image quay.io/skupper/simple-pg --env=\"PGUSER=postgres\" --env=\"PGPASSWORD=skupper\" --env=\"PGHOST=$(kubectl get service postgresql -o=jsonpath='{.spec.clusterIP}')\" -- bash"
+    postamble: |
+      Note that if the session is ended, it can be resumed with the following:
+           ```bash
+           kubectl attach pg-shell -c pg-shell -i -t
+           ```
+  - title: Create a Database, Create a Table, Insert Values
+    preamble: |
+      Using the 'pg-shell' pod running on each cluster, operate on the database:
+    commands:
+      private1:
+        - run: createdb -e markets
+      public1:
+        - run: psql -d markets
+        - run: "create table if not exists product (id SERIAL, name VARCHAR(100) NOT NULL, sku CHAR(8));"
+      public2:
+        - run: psql -d markets
+        - run: "INSERT INTO product VALUES(DEFAULT, 'Apple, Fuji', '4131');"
+        - run: "INSERT INTO product VALUES(DEFAULT, 'Banana', '4011');"
+        - run: "INSERT INTO product VALUES(DEFAULT, 'Pear, Bartlett', '4214');"
+        - run: "INSERT INTO product VALUES(DEFAULT, 'Orange', '4056');"
+    postamble: |
+      From any cluster, access the `product` tables in the `markets` database to view contents.
+summary: |
+  In this tutorial, you will create a Virtual Application Nework that enables communications 
+  across the public and private clusters. You will then deploy a PostgresSQL database 
+  instance to a private cluster and attach it to the Virtual Application Network. 
+  It will enable clients on different public clusters attached to the Virtual Application 
+  Nework to transparently access the database without the need for additional networking setup 
+  (e.g. no vpn or firewall rules required).
+cleaning_up:
+  preamble: !string cleaning_up_preamble
+  commands:
+    public1:
+      - run: skupper delete
+      - run: kubectl delete pod pg-shell
+    public2:
+      - run: skupper delete
+      - run: kubectl delete pod pg-shell
+    private1:
+      - run: kubectl delete pod pg-shell
+      - run: skupper unexpose deployment postgresql
+      - run: kubectl delete -f ~/pg-demo/skupper-example-postgresql/deployment-postgresql-svc.yaml
+      - run: skupper delete
+next_steps: !string next_steps
