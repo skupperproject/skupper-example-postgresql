@@ -1,7 +1,5 @@
 # PostgreSQL Example
 
-[![main](https://github.com/skupperproject/skupper-example-postgresql/actions/workflows/main.yaml/badge.svg)](https://github.com/skupperproject/skupper-example-postgresql/actions/workflows/main.yaml)
-
 #### Sharing a PostgreSQL database across clusters
 
 This example is part of a [suite of examples][examples] showing the
@@ -268,11 +266,11 @@ From any cluster, access the `product` tables in the `markets` database to view 
 
 ## Summary
 
-In this tutorial, you will create a Virtual Application Nework that enables communications 
-across the public and private clusters. You will then deploy a PostgresSQL database 
-instance to a private cluster and attach it to the Virtual Application Network. 
-It will enable clients on different public clusters attached to the Virtual Application 
-Nework to transparently access the database without the need for additional networking setup 
+In this tutorial, we have seen how to create a Virtual Application Nework that enables communications 
+across the public and private clusters. We deployed a PostgresSQL database 
+instance into a private cluster and attached it to the Virtual Application Network. 
+This configuration enabled the clients from different public clusters attached to the Virtual Application 
+Network to transparently access the database without the need of additional networking setup 
 (e.g. no vpn or firewall rules required).
 
 ## Cleaning up

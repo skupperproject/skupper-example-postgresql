@@ -5,7 +5,7 @@ overview: |
   This tutorial demonstrates how to share a PostgreSQL database across multiple Kubernetes clusters that are located in 
   different public and private cloud providers.
 prerequisites: !string prerequisites
-contexts:
+sites:
   private1:
     kubeconfig: ~/.kube/private1
     namespace: private
@@ -118,11 +118,11 @@ steps:
     postamble: |
       From any cluster, access the `product` tables in the `markets` database to view contents.
 summary: |
-  In this tutorial, you will create a Virtual Application Nework that enables communications 
-  across the public and private clusters. You will then deploy a PostgresSQL database 
-  instance to a private cluster and attach it to the Virtual Application Network. 
-  It will enable clients on different public clusters attached to the Virtual Application 
-  Nework to transparently access the database without the need for additional networking setup 
+  In this tutorial, we have seen how to create a Virtual Application Nework that enables communications 
+  across the public and private clusters. We deployed a PostgresSQL database 
+  instance into a private cluster and attached it to the Virtual Application Network. 
+  This configuration enabled the clients from different public clusters attached to the Virtual Application 
+  Network to transparently access the database without the need of additional networking setup 
   (e.g. no vpn or firewall rules required).
 cleaning_up:
   preamble: !string cleaning_up_preamble
