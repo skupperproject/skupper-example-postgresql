@@ -2,7 +2,7 @@
 
 This tutorial demonstrates how to share a PostgreSQL database across multiple Kubernetes clusters that are located in different public and private cloud providers.
 
-In this tutorial, you will create a Virtual Application Nework that enables communications across the public and private clusters. You will then deploy a PostgresSQL database instance to a private cluster and attach it to the Virtual Application Network. Thie will enable clients on different public clusters attached to the Virtual Application Nework to transparently access the database without the need for additional networking setup (e.g. no vpn or sdn required).
+In this tutorial, you will create a Virtual Application Nework that enables communications across the public and private clusters. You will then deploy a PostgresSQL database instance to a private cluster and attach it to the Virtual Application Network. This will enable clients on different public clusters attached to the Virtual Application Nework to transparently access the database without the need for additional networking setup (e.g. no vpn or sdn required).
 
 To complete this tutorial, do the following:
 
@@ -19,7 +19,7 @@ To complete this tutorial, do the following:
 ## Prerequisites
 
 * The `kubectl` command-line tool, version 1.15 or later ([installation guide](https://kubernetes.io/docs/tasks/tools/install-kubectl/))
-* The `skupper` command-line tool, version 0.7 or later ([installation guide](https://skupper.io/start/index.html#step-1-install-the-skupper-command-line-tool-in-your-environment))
+* The `skupper` command-line tool, version 1.8 or later ([installation guide](https://skupper.io/start/index.html#step-1-install-the-skupper-command-line-tool-in-your-environment))
 
 The basis for the demonstration is to depict the operation of a PostgreSQL database in a private cluster and the ability to access the database from clients resident on other public clusters. As an example, the cluster deployment might be comprised of:
 
@@ -114,7 +114,7 @@ After creating the application router network, deploy the PostgreSQL service. Th
 2. In the **private1** cluster terminal, verify the service bind to the target
 
    ```bash
-   skupper service status
+   skupper service status -v
    ```
 
     Note that the **private1** is the only cluster to provide a target.
@@ -124,17 +124,11 @@ After creating the application router network, deploy the PostgreSQL service. Th
 1. From each cluster terminial, create a pod that contains the PostgreSQL client utilities:
 
    ```bash
-   kubectl run pg-shell -i --tty --image quay.io/skupper/simple-pg \
+   kubectl run pg-shell --image quay.io/fgiorgetti/simple-pg \
    --env="PGUSER=postgres" \
    --env="PGPASSWORD=skupper" \
-   --env="PGHOST=$(kubectl get service postgresql -o=jsonpath='{.spec.clusterIP}')" \
-   -- bash
-   ```
-
-2. Note that if the session is ended, it can be resumed with the following:
-
-   ```bash
-   kubectl attach pg-shell -c pg-shell -i -t
+   --env="PGHOST=postgresql" \
+   --command sleep infinity
    ```
 
 ## Step 7: Create a Database, Create a Table, Insert Values
@@ -144,35 +138,25 @@ Using the 'pg-shell' pod running on each cluster, operate on the database:
 1. Create a database called 'markets' from the **private1** cluster
 
    ```bash
-   bash-5.0$ createdb -e markets
+   kubectl exec pg-shell -- createdb -e markets
    ```
 
 2. Create a table called 'product' in the 'markets' database from the **public1** cluster
 
    ```bash
-   bash-5.0$ psql -d markets
-   markets# create table if not exists product (
-              id              SERIAL,
-              name            VARCHAR(100) NOT NULL,
-              sku             CHAR(8)
-              );
+   cat sql/table.sql | kubectl exec -i pg-shell -- psql -d markets
    ```
 
 3. Insert values into the `product` table in the `markets` database from the **public2** cluster:
 
    ```bash
-   bash-5.0$ psql -d markets
-   markets# INSERT INTO product VALUES(DEFAULT, 'Apple, Fuji', '4131');
-   markets# INSERT INTO product VALUES(DEFAULT, 'Banana', '4011');
-   markets# INSERT INTO product VALUES(DEFAULT, 'Pear, Bartlett', '4214');
-   markets# INSERT INTO product VALUES(DEFAULT, 'Orange', '4056');
+   cat sql/data.sql | kubectl exec -i pg-shell -- psql -d markets
    ```
 
 4. From any cluster, access the `product` tables in the `markets` database to view contents
 
    ```bash
-   bash-5.0$ psql -d markets
-   markets# SELECT * FROM product;
+   kubectl exec -i pg-shell -- psql -d markets <<< "SELECT * FROM product;"
    ```
 
 ## Cleaning Up
