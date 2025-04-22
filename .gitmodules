@@ -1,0 +1,4 @@
+[submodule "external/skewer"]
+	path = external/skewer
+	url = https://github.com/skupperproject/skewer
+	branch = v2
