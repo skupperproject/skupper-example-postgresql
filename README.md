@@ -2,7 +2,7 @@
 
 # Sharing a PostgreSQL database across clusters
 
-[![main](https://github.com/fgiorgetti/skupper-example-postgresql/actions/workflows/v2.yaml/badge.svg)](https://github.com/fgiorgetti/skupper-example-postgresql/actions/workflows/v2.yaml)
+[![main](https://github.com/fgiorgetti/skupper-example-postgresql/actions/workflows/main.yaml/badge.svg)](https://github.com/fgiorgetti/skupper-example-postgresql/actions/workflows/main.yaml)
 
 #### This tutorial demonstrates how to share a PostgreSQL database across multiple Kubernetes clusters that are located in different public and private cloud providers.
 
