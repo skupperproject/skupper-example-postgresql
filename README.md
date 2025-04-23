@@ -330,7 +330,7 @@ _**Public 1 cluster:**_
 cd ~/
 mkdir pg-demo
 cd pg-demo
-git clone -b v2 https://github.com/fgiorgetti/skupper-example-postgresql.git
+git clone -b v2 https://github.com/skupperproject/skupper-example-postgresql.git
 ~~~
 
 ## Step 8: Deploy the PostgreSQL service

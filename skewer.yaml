@@ -99,7 +99,7 @@ steps:
             cd ~/
             mkdir pg-demo
             cd pg-demo
-            git clone -b v2 https://github.com/fgiorgetti/skupper-example-postgresql.git
+            git clone -b v2 https://github.com/skupperproject/skupper-example-postgresql.git
   - title: Deploy the PostgreSQL service
     preamble: |
       After creating the application router network, deploy the PostgreSQL service.
