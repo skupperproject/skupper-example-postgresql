@@ -1,0 +1,8 @@
+apiVersion: skupper.io/v2alpha1
+kind: AccessToken
+metadata:
+  name: token-{{.metadata.name}}
+spec:
+  ca: {{printf "%q" .status.ca}}
+  code: {{.status.code}}
+  url: {{.status.url}} 

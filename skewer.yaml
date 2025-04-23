@@ -93,24 +93,17 @@ steps:
         - run: kubectl apply -f ~/pg-demo/skupper-example-postgresql/kubernetes/public1/accessgrant.yaml
         - run: kubectl wait --for=condition=ready accessgrant/public1-grant
         - run: |
-            kubectl get accessgrant public1-grant -o go-template="
-            apiVersion: skupper.io/v2alpha1
-            kind: AccessToken
-            metadata:
-              name: token-{{.metadata.name}}
-            spec:
-              ca: {{printf \"%q\" .status.ca}}
-              code: {{.status.code}}
-              url: {{.status.url}} 
-            " > ~/public1.token
+            kubectl get accessgrant public1-grant -o go-template-file=~/pg-demo/skupper-example-postgresql/kubernetes/token.template > ~/public1.token
       "public2":
         - run: kubectl apply -f ~/public1.token
           output: |
-            accesstoken.skupper.io/public1-grant created
+            accesstoken.skupper.io/token-public1-grant created
+        - run: kubectl wait --for=condition=ready link/token-public1-grant
       "private1":
         - run: kubectl apply -f ~/public1.token
           output: |
-            accesstoken.skupper.io/public1-grant created
+            accesstoken.skupper.io/token-public1-grant created
+        - run: kubectl wait --for=condition=ready link/token-public1-grant
     postamble: |
       If your terminal sessions are on different machines, you may need
       to use `scp` or a similar tool to transfer the token securely.  By

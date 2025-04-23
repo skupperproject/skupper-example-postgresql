@@ -228,42 +228,35 @@ _**Public 1 cluster:**_
 ~~~ shell
 kubectl apply -f ~/pg-demo/skupper-example-postgresql/kubernetes/public1/accessgrant.yaml
 kubectl wait --for=condition=ready accessgrant/public1-grant
-kubectl get accessgrant public1-grant -o go-template="
-apiVersion: skupper.io/v2alpha1
-kind: AccessToken
-metadata:
-  name: token-{{.metadata.name}}
-spec:
-  ca: {{printf \"%q\" .status.ca}}
-  code: {{.status.code}}
-  url: {{.status.url}} 
-" > ~/public1.token
+kubectl get accessgrant public1-grant -o go-template-file=~/pg-demo/skupper-example-postgresql/kubernetes/token.template > ~/public1.token
 ~~~
 
 _**Public 2 cluster:**_
 
 ~~~ shell
 kubectl apply -f ~/public1.token
+kubectl wait --for=condition=ready link/token-public1-grant
 ~~~
 
 _Sample output:_
 
 ~~~ console
 $ kubectl apply -f ~/public1.token
-accesstoken.skupper.io/public1-grant created
+accesstoken.skupper.io/token-public1-grant created
 ~~~
 
 _**Private 1 cluster:**_
 
 ~~~ shell
 kubectl apply -f ~/public1.token
+kubectl wait --for=condition=ready link/token-public1-grant
 ~~~
 
 _Sample output:_
 
 ~~~ console
 $ kubectl apply -f ~/public1.token
-accesstoken.skupper.io/public1-grant created
+accesstoken.skupper.io/token-public1-grant created
 ~~~
 
 If your terminal sessions are on different machines, you may need
