@@ -528,7 +528,7 @@ private Kubernetes cluster, without exposing it to the public internet.
 
 By deploying Skupper in each namespace, we established a **Virtual Application Network** (VAN), which allowed
 the PostgreSQL service to be securely shared across clusters. The database was made available exclusively within
-the VAN, enabling applications in the public1 and public2 clusters to access it seamlessly—as if it were running
+the VAN, enabling applications in the public1 and public2 clusters to access it seamlessly, as if it were running
 locally in their own namespaces.
 
 This approach not only simplifies multi-cluster communication but also preserves strict network boundaries,
