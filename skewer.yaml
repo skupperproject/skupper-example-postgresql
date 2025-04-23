@@ -3,7 +3,7 @@ subtitle: This tutorial demonstrates how to share a PostgreSQL database across m
 workflow: v2.yaml
 overview: |
   In this tutorial, you will create a Virtual Application Nework that enables communications across the public and private clusters.
-  You will then deploy a PostgresSQL database instance to a private cluster and attach it to the Virtual Application Network.
+  You will then deploy a PostgreSQL database instance to a private cluster and attach it to the Virtual Application Network.
   This will enable clients on different public clusters attached to the Virtual Application Nework to transparently access the database
   without the need for additional networking setup (e.g. no vpn or sdn required).
 prerequisites: |
@@ -37,52 +37,12 @@ sites:
     namespace: private1
     env:
       KUBECONFIG: $PWD/kubeconfigs/private1.config
-  terminal:
-    title: Local terminal
-    platform: podman
-    namespace: public1
-    env:
-      SKUPPER_PLATFORM: podman
 steps:
   - standard: platform/access_your_kubernetes_clusters
   - standard: platform/install_skupper_on_your_kubernetes_clusters
   - standard: platform/install_the_skupper_command_line_tool
   - standard: platform/create_your_kubernetes_namespaces
-  - title: Create your sites
-    preamble: |
-      A Skupper _site_ is a location where your application workloads
-      are running.  Sites are linked together to form a network for your
-      application.
-
-      For each namespace, use `skupper site create` with a site name of
-      your choice.  This creates the site resource and deploys the
-      Skupper router to the namespace.
-
-      **Note:** If you are using Minikube, you need to [start minikube
-      tunnel][minikube-tunnel] before you run `skupper site create`.
-
-      <!-- XXX Explain enabling link acesss on one of the sites -->
-
-      [minikube-tunnel]: https://skupper.io/start/minikube.html#running-minikube-tunnel
-    commands:
-      "public1":
-        - run: skupper site create public1 --enable-link-access
-          output: |
-            Waiting for status...
-            Site "public1" is configured. Check the status to see when it is ready
-      "public2":
-        - run: skupper site create public2 --enable-link-access
-          output: |
-            Waiting for status...
-            Site "public2" is configured. Check the status to see when it is ready
-      "private1":
-        - run: skupper site create private1
-          output: |
-            Waiting for status...
-            Site "private1" is configured. Check the status to see when it is ready
-    postamble: |
-      You can use `skupper site status` at any time to check the status
-      of your site. 
+  - standard: skupper/create_your_sites/kubernetes_cli
   - title: Link your sites
     preamble: |
       A Skupper _link_ is a channel for communication between two sites.
@@ -100,11 +60,11 @@ steps:
       token can link to your site.  Make sure that only those you trust
       have access to it.
 
-      First, use `skupper token issue` in public1 and public2 clusters to generate the tokens.
-      Then, use `skupper token redeem` in private1 cluster to link the sites.
+      First, use `skupper token issue` in public1 cluster to generate the token.
+      Then, use `skupper token redeem` in public2 and private1 clusters to link the sites.
     commands:
       "public1":
-        - run: skupper token issue ~/public1.token
+        - run: skupper token issue -r 2 ~/public1.token
           output: |
             Waiting for token status ...
 
@@ -116,30 +76,17 @@ steps:
 
               skupper token redeem <file>
 
-            The token expires after 1 use(s) or after 15m0s.
+            The token expires after 2 use(s) or after 15m0s.
       "public2":
-        - run: skupper token issue ~/public2.token
+        - run: skupper token redeem ~/public1.token
           output: |
             Waiting for token status ...
-
-            Grant "public2-cad4f72d-2917-49b9-ab66-cdaca4d6cf9c" is ready
-            Token file /run/user/1000/skewer/public2.token created
-
-            Transfer this file to a remote site. At the remote site,
-            create a link to this site using the "skupper token redeem" command:
-
-              skupper token redeem <file>
-
-            The token expires after 1 use(s) or after 15m0s.
+            Token "public1-cad4f72d-2917-49b9-ab66-cdaca4d6cf9c" has been redeemed
       "private1":
         - run: skupper token redeem ~/public1.token
           output: |
             Waiting for token status ...
             Token "public1-cad4f72d-2917-49b9-ab66-cdaca4d6cf9c" has been redeemed
-        - run: skupper token redeem ~/public2.token
-          output: |
-            Waiting for token status ...
-            Token "public2-cad4f72d-2917-49b9-ab66-cdaca4d6cf9c" has been redeemed
     postamble: |
       If your terminal sessions are on different machines, you may need
       to use `scp` or a similar tool to transfer the token securely.  By
@@ -149,12 +96,12 @@ steps:
     preamble: |
       On your local machine, make a directory for this tutorial and clone the example repo:
     commands:
-      terminal:
+      public1:
         - run: |
-            cd ~/ ;
-            mkdir pg-demo ;
-            cd pg-demo ;
-            git clone -b v2 https://github.com/skupperproject/skupper-example-postgresql.git
+            cd ~/
+            mkdir pg-demo
+            cd pg-demo
+            git clone -b v2 https://github.com/fgiorgetti/skupper-example-postgresql.git
   - title: Deploy the PostgreSQL service
     preamble: |
       After creating the application router network, deploy the PostgreSQL service.
@@ -164,6 +111,11 @@ steps:
       private1:
         - run: |
             kubectl apply -f ~/pg-demo/skupper-example-postgresql/deployment-postgresql-svc.yaml
+          output: |
+            secret/postgresql created
+            deployment.apps/postgresql created
+        - await_resource: deployment/postgresql
+          apply: test
   - title: Expose the PostegreSQL on the Virtual Application Network
     preamble: |
       Now that the PostgreSQL is running in the **private1** cluster, we need to expose it into your Virtual Application Network (VAN).
@@ -171,6 +123,9 @@ steps:
       private1:
         - run: |
             skupper connector create postgresql 5432 --workload deployment/postgresql
+          output: |
+            Waiting for create to complete...
+            Connector "postgresql" is configured.
   - title: Making the PostegreSQL database accessible to the public sites
     preamble: |
       In order to make the PostgreSQL database accessible to the **public1** and **public2** sites, we need to define a `Listener`
@@ -179,9 +134,15 @@ steps:
       public1:
         - run: |
             skupper listener create postgresql 5432
+          output: |
+            Waiting for create to complete...
+            Listener "postgresql" is configured.
       public2:
         - run: |
             skupper listener create postgresql 5432
+          output: |
+            Waiting for create to complete...
+            Listener "postgresql" is configured.
   - title: Create pod with PostgreSQL client utilities
     preamble: |
       Create a pod named `pg-shell` on each of the public clusters. This pod will be used to
@@ -194,6 +155,9 @@ steps:
             --env="PGPASSWORD=skupper" \
             --env="PGHOST=postgresql" \
             --command sleep infinity
+          output: pod/pg-shell created
+        - run: kubectl wait --for condition=ready --timeout 300s pod/pg-shell
+          apply: test
       public2:
         - run: |
             kubectl run pg-shell --image quay.io/skupper/simple-pg \
@@ -201,6 +165,9 @@ steps:
             --env="PGPASSWORD=skupper" \
             --env="PGHOST=postgresql" \
             --command sleep infinity
+          output: pod/pg-shell created
+        - run: kubectl wait --for condition=ready --timeout 300s pod/pg-shell
+          apply: test
   - title: Create a database, a table and insert values
     preamble: |
       Now that we can access the PostgreSQL database from both public sites, let's create a database called **markets**,
@@ -209,8 +176,16 @@ steps:
       public1:
         - run: |
             kubectl exec pg-shell -- createdb -e markets
-            cat ~/pg-demo/skupper-example-postgresql/sql/table.sql | kubectl exec -i pg-shell -- psql -d markets
-            cat ~/pg-demo/skupper-example-postgresql/sql/data.sql | kubectl exec -i pg-shell -- psql -d markets
+            kubectl exec -i pg-shell -- psql -d markets < ~/pg-demo/skupper-example-postgresql/sql/table.sql
+            kubectl exec -i pg-shell -- psql -d markets < ~/pg-demo/skupper-example-postgresql/sql/data.sql
+          output: |
+            SELECT pg_catalog.set_config('search_path', '', false);
+            CREATE DATABASE markets;
+            CREATE TABLE
+            INSERT 0 1
+            INSERT 0 1
+            INSERT 0 1
+            INSERT 0 1
   - title: Access the product table from any site
     preamble: |
       Now that data has been added, try to read them from both the **public1** and **public2** sites.
@@ -220,19 +195,18 @@ steps:
       public2:
         - run: kubectl exec -i pg-shell -- psql -d markets <<< "SELECT * FROM product;"
   - title: Cleaning up
+    name: cleaning_up
     preamble: |
       Restore your cluster environment by returning the resources created in the demonstration. On each cluster, delete the 
       demo resources and the virtual application Network.
+    numbered: false
     commands:
       public1:
-        - run: |
-            kubectl delete pod pg-shell
-            skupper site delete --all
+        - run: kubectl delete pod pg-shell --now
+        - run: skupper site delete --all
       public2:
-        - run: |
-            kubectl delete pod pg-shell
-            skupper site delete --all
+        - run: kubectl delete pod pg-shell --now
+        - run: skupper site delete --all
       private1:
-        - run: |
-            kubectl delete -f ~/pg-demo/skupper-example-postgresql/deployment-postgresql-svc.yaml
-            skupper site delete --all
+        - run: kubectl delete -f ~/pg-demo/skupper-example-postgresql/deployment-postgresql-svc.yaml
+        - run: skupper site delete --all
