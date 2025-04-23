@@ -52,8 +52,7 @@ without the need for additional networking setup (e.g. no vpn or sdn required).
 [kube-providers]: https://skupper.io/start/kubernetes.html
 [install-kubectl]: https://kubernetes.io/docs/tasks/tools/install-kubectl/
 
-* The `kubectl` command-line tool, version 1.15 or later ([installation guide](https://kubernetes.io/docs/tasks/tools/install-kubectl/))
-* The `skupper` command-line tool, version 2.0 or later ([installation guide](https://skupper.io/start/index.html#step-1-install-the-skupper-command-line-tool-in-your-environment))
+* The `skupper` command-line tool, version 2.0 or later ([installation guide](https://skupper.io/v2/#installing-the-cli))
 
 The basis for the demonstration is to depict the operation of a PostgreSQL database in a private cluster and the ability to access the database from clients resident on other public clusters. As an example, the cluster deployment might be comprised of:
 
