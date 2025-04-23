@@ -1,7 +1,6 @@
 title: Sharing a PostgreSQL database across clusters
 subtitle: |
-  This tutorial demonstrates how to share a PostgreSQL database across multiple Kubernetes clusters that are located in
-  different public and private cloud providers.
+  This tutorial demonstrates how to share a PostgreSQL database across multiple Kubernetes clusters that are located in different public and private cloud providers.
 overview: |
   In this tutorial, you will create a Virtual Application Nework that enables communications across the public and private clusters.
   You will then deploy a PostgreSQL database instance to a private cluster and attach it to the Virtual Application Network.
