@@ -25,8 +25,8 @@ across cloud providers, data centers, and edge sites.
 * [Step 6: Link your sites](#step-6-link-your-sites)
 * [Step 7: Set up the demo](#step-7-set-up-the-demo)
 * [Step 8: Deploy the PostgreSQL service](#step-8-deploy-the-postgresql-service)
-* [Step 9: Expose the PostegreSQL on the Virtual Application Network](#step-9-expose-the-postegresql-on-the-virtual-application-network)
-* [Step 10: Making the PostegreSQL database accessible to the public sites](#step-10-making-the-postegresql-database-accessible-to-the-public-sites)
+* [Step 9: Expose the PostgreSQL on the Virtual Application Network](#step-9-expose-the-postgresql-on-the-virtual-application-network)
+* [Step 10: Making the PostgreSQL database accessible to the public sites](#step-10-making-the-postgresql-database-accessible-to-the-public-sites)
 * [Step 11: Create pod with PostgreSQL client utilities](#step-11-create-pod-with-postgresql-client-utilities)
 * [Step 12: Create a database, a table and insert values](#step-12-create-a-database-a-table-and-insert-values)
 * [Step 13: Access the product table from any site](#step-13-access-the-product-table-from-any-site)
@@ -353,7 +353,7 @@ secret/postgresql created
 deployment.apps/postgresql created
 ~~~
 
-## Step 9: Expose the PostegreSQL on the Virtual Application Network
+## Step 9: Expose the PostgreSQL on the Virtual Application Network
 
 Now that the PostgreSQL is running in the **private1** cluster, we need to expose it into your Virtual Application Network (VAN).
 
@@ -371,7 +371,7 @@ Waiting for create to complete...
 Connector "postgresql" is configured.
 ~~~
 
-## Step 10: Making the PostegreSQL database accessible to the public sites
+## Step 10: Making the PostgreSQL database accessible to the public sites
 
 In order to make the PostgreSQL database accessible to the **public1** and **public2** sites, we need to define a `Listener`
 on each site, which will produce a Kubernetes service on each cluster, connecting them with the database running on **private1** cluster.

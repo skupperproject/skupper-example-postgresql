@@ -115,7 +115,7 @@ steps:
             deployment.apps/postgresql created
         - await_resource: deployment/postgresql
           apply: test
-  - title: Expose the PostegreSQL on the Virtual Application Network
+  - title: Expose the PostgreSQL on the Virtual Application Network
     preamble: |
       Now that the PostgreSQL is running in the **private1** cluster, we need to expose it into your Virtual Application Network (VAN).
     commands:
@@ -125,7 +125,7 @@ steps:
           output: |
             Waiting for create to complete...
             Connector "postgresql" is configured.
-  - title: Making the PostegreSQL database accessible to the public sites
+  - title: Making the PostgreSQL database accessible to the public sites
     preamble: |
       In order to make the PostgreSQL database accessible to the **public1** and **public2** sites, we need to define a `Listener`
       on each site, which will produce a Kubernetes service on each cluster, connecting them with the database running on **private1** cluster.
