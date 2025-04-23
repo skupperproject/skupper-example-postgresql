@@ -1,0 +1,10 @@
+apiVersion: skupper.io/v2alpha1
+kind: Connector
+metadata:
+  name: postgresql
+  namespace: private1
+spec:
+  port: 5432
+  routingKey: postgresql
+  selector: application=postgresql
+  type: tcp

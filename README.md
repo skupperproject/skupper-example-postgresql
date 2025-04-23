@@ -4,7 +4,8 @@
 
 [![main](https://github.com/fgiorgetti/skupper-example-postgresql/actions/workflows/main.yaml/badge.svg)](https://github.com/fgiorgetti/skupper-example-postgresql/actions/workflows/main.yaml)
 
-#### This tutorial demonstrates how to share a PostgreSQL database across multiple Kubernetes clusters that are located in different public and private cloud providers.
+#### This tutorial demonstrates how to share a PostgreSQL database across multiple Kubernetes clusters that are located in
+different public and private cloud providers.
 
 This example is part of a [suite of examples][examples] showing the
 different ways you can use [Skupper][website] to connect services
@@ -19,17 +20,16 @@ across cloud providers, data centers, and edge sites.
 * [Prerequisites](#prerequisites)
 * [Step 1: Access your Kubernetes clusters](#step-1-access-your-kubernetes-clusters)
 * [Step 2: Install Skupper on your Kubernetes clusters](#step-2-install-skupper-on-your-kubernetes-clusters)
-* [Step 3: Install the Skupper command-line tool](#step-3-install-the-skupper-command-line-tool)
-* [Step 4: Create your Kubernetes namespaces](#step-4-create-your-kubernetes-namespaces)
-* [Step 5: Create your sites](#step-5-create-your-sites)
-* [Step 6: Link your sites](#step-6-link-your-sites)
-* [Step 7: Set up the demo](#step-7-set-up-the-demo)
-* [Step 8: Deploy the PostgreSQL service](#step-8-deploy-the-postgresql-service)
-* [Step 9: Expose the PostgreSQL on the Virtual Application Network](#step-9-expose-the-postgresql-on-the-virtual-application-network)
-* [Step 10: Making the PostgreSQL database accessible to the public sites](#step-10-making-the-postgresql-database-accessible-to-the-public-sites)
-* [Step 11: Create pod with PostgreSQL client utilities](#step-11-create-pod-with-postgresql-client-utilities)
-* [Step 12: Create a database, a table and insert values](#step-12-create-a-database-a-table-and-insert-values)
-* [Step 13: Access the product table from any site](#step-13-access-the-product-table-from-any-site)
+* [Step 3: Create your Kubernetes namespaces](#step-3-create-your-kubernetes-namespaces)
+* [Step 4: Create your sites](#step-4-create-your-sites)
+* [Step 5: Link your sites](#step-5-link-your-sites)
+* [Step 6: Set up the demo](#step-6-set-up-the-demo)
+* [Step 7: Deploy the PostgreSQL service](#step-7-deploy-the-postgresql-service)
+* [Step 8: Expose the PostgreSQL on the Virtual Application Network](#step-8-expose-the-postgresql-on-the-virtual-application-network)
+* [Step 9: Making the PostgreSQL database accessible to the public sites](#step-9-making-the-postgresql-database-accessible-to-the-public-sites)
+* [Step 10: Create pod with PostgreSQL client utilities](#step-10-create-pod-with-postgresql-client-utilities)
+* [Step 11: Create a database, a table and insert values](#step-11-create-a-database-a-table-and-insert-values)
+* [Step 12: Access the product table from any site](#step-12-access-the-product-table-from-any-site)
 * [Cleaning up](#cleaning-up)
 * [Summary](#summary)
 * [Next steps](#next-steps)
@@ -53,9 +53,8 @@ without the need for additional networking setup (e.g. no vpn or sdn required).
 [kube-providers]: https://skupper.io/start/kubernetes.html
 [install-kubectl]: https://kubernetes.io/docs/tasks/tools/install-kubectl/
 
-* The `skupper` command-line tool, version 2.0 or later ([installation guide](https://skupper.io/v2/#installing-the-cli))
-
-The basis for the demonstration is to depict the operation of a PostgreSQL database in a private cluster and the ability to access the database from clients resident on other public clusters. As an example, the cluster deployment might be comprised of:
+The basis for the demonstration is to depict the operation of a PostgreSQL database in a private cluster and the ability to access the
+database from clients resident on other public clusters. As an example, the cluster deployment might be comprised of:
 
 * A private cloud cluster running on your local machine
 * Two public cloud clusters running in public cloud providers
@@ -129,29 +128,7 @@ _**Private 1 cluster:**_
 kubectl apply -f https://skupper.io/v2/install.yaml
 ~~~
 
-## Step 3: Install the Skupper command-line tool
-
-This example uses the Skupper command-line tool to create Skupper
-resources.  You need to install the `skupper` command only once
-for each development environment.
-
-On Linux or Mac, you can use the install script (inspect it
-[here][install-script]) to download and extract the command:
-
-~~~ shell
-curl https://skupper.io/v2/install.sh | sh
-~~~
-
-The script installs the command under your home directory.  It
-prompts you to add the command to your path if necessary.
-
-For Windows and other installation options, see [Installing
-Skupper][install-docs].
-
-[install-script]: https://github.com/skupperproject/skupper-website/blob/main/input/install.sh
-[install-docs]: https://skupper.io/install/
-
-## Step 4: Create your Kubernetes namespaces
+## Step 3: Create your Kubernetes namespaces
 
 The example application has different components deployed to
 different Kubernetes namespaces.  To set up our example, we need
@@ -182,137 +159,99 @@ kubectl create namespace private1
 kubectl config set-context --current --namespace private1
 ~~~
 
-## Step 5: Create your sites
+## Step 4: Create your sites
 
-A Skupper _site_ is a location where your application workloads
-are running.  Sites are linked together to form a network for your
+A Skupper _Site_ is a location where your application workloads
+are running. Sites are linked together to form a network for your
 application.
 
-For each namespace, use `skupper site create` with a site name of
-your choice.  This creates the site resource and deploys the
-Skupper router to the namespace.
+Use the `kubectl apply` command to declaratively create sites in the kubernetes
+namespaces. This deploys the Skupper router. Then use `kubectl get site` to see
+the outcome.
 
-**Note:** If you are using Minikube, you need to [start minikube
-tunnel][minikube-tunnel] before you run `skupper site create`.
+  **Note:** If you are using Minikube, you need to [start minikube
+  tunnel][minikube-tunnel] before you configure skupper.
 
-<!-- XXX Explain enabling link acesss on one of the sites -->
+  [minikube-tunnel]: https://skupper.io/start/minikube.html#running-minikube-tunnel
 
-[minikube-tunnel]: https://skupper.io/start/minikube.html#running-minikube-tunnel
+The **public1** site definition sets `linkAccess: default`, because the other two sites **public2** and **private1**
+will establish a Skupper link to **public1**. This extra definition tells that the **public1** site accepts incoming
+Skupper links from other sites using the default ingress type for the target cluster (_route_ when using OpenShift or _loadbalancer_ otherwise).
 
 _**Public 1 cluster:**_
 
 ~~~ shell
-skupper site create public1 --enable-link-access
-~~~
-
-_Sample output:_
-
-~~~ console
-$ skupper site create public1 --enable-link-access
-Waiting for status...
-Site "public1" is configured. Check the status to see when it is ready
+kubectl apply -f ~/pg-demo/skupper-example-postgresql/kubernetes/public1/site.yaml
 ~~~
 
 _**Public 2 cluster:**_
 
 ~~~ shell
-skupper site create public2
-~~~
-
-_Sample output:_
-
-~~~ console
-$ skupper site create public2
-Waiting for status...
-Site "public2" is configured. Check the status to see when it is ready
+kubectl apply -f ~/pg-demo/skupper-example-postgresql/kubernetes/public2/site.yaml
 ~~~
 
 _**Private 1 cluster:**_
 
 ~~~ shell
-skupper site create private1
+kubectl apply -f ~/pg-demo/skupper-example-postgresql/kubernetes/private1/site.yaml
 ~~~
 
-_Sample output:_
-
-~~~ console
-$ skupper site create private1
-Waiting for status...
-Site "private1" is configured. Check the status to see when it is ready
-~~~
-
-You can use `skupper site status` at any time to check the status
-of your site.
-
-## Step 6: Link your sites
+## Step 5: Link your sites
 
 A Skupper _link_ is a channel for communication between two sites.
 Links serve as a transport for application connections and
 requests.
 
-Creating a link requires the use of two Skupper commands in
-conjunction: `skupper token issue` and `skupper token redeem`.
-The `skupper token issue` command generates a secret token that
-can be transferred to a remote site and redeemed for a link to the
-issuing site.  The `skupper token redeem` command uses the token
-to create the link.
+Creating an AccessToken requires the creation of an AccessGrant first,
+on the target namespace (**public1**), then we can consume the AccessGrant's status
+to write an AccessToken and apply if into the target clusters (**public2** and **private1**)
+using `kubectl apply`.
 
 **Note:** The link token is truly a *secret*.  Anyone who has the
 token can link to your site.  Make sure that only those you trust
 have access to it.
 
-First, use `skupper token issue` in public1 cluster to generate the token.
-Then, use `skupper token redeem` in public2 and private1 clusters to link the sites.
-
 _**Public 1 cluster:**_
 
 ~~~ shell
-skupper token issue -r 2 ~/public1.token
-~~~
-
-_Sample output:_
-
-~~~ console
-$ skupper token issue -r 2 ~/public1.token
-Waiting for token status ...
-
-Grant "public1-cad4f72d-2917-49b9-ab66-cdaca4d6cf9c" is ready
-Token file /run/user/1000/skewer/public1.token created
-
-Transfer this file to a remote site. At the remote site,
-create a link to this site using the "skupper token redeem" command:
-
-  skupper token redeem <file>
-
-The token expires after 2 use(s) or after 15m0s.
+kubectl apply -f ~/pg-demo/skupper-example-postgresql/kubernetes/public1/accessgrant.yaml
+kubectl wait --for=condition=ready accessgrant/public1-grant
+kubectl get accessgrant public1-grant -o go-template="
+apiVersion: skupper.io/v2alpha1
+kind: AccessToken
+metadata:
+  name: token-{{.metadata.name}}
+spec:
+  ca: {{printf \"%q\" .status.ca}}
+  code: {{.status.code}}
+  url: {{.status.url}} 
+" > ~/public1.token
 ~~~
 
 _**Public 2 cluster:**_
 
 ~~~ shell
-skupper token redeem ~/public1.token
+kubectl apply -f ~/public1.token
 ~~~
 
 _Sample output:_
 
 ~~~ console
-$ skupper token redeem ~/public1.token
-Waiting for token status ...
-Token "public1-cad4f72d-2917-49b9-ab66-cdaca4d6cf9c" has been redeemed
+$ kubectl apply -f ~/public1.token
+accesstoken.skupper.io/public1-grant created
 ~~~
 
 _**Private 1 cluster:**_
 
 ~~~ shell
-skupper token redeem ~/public1.token
+kubectl apply -f ~/public1.token
 ~~~
 
 _Sample output:_
 
 ~~~ console
-$ skupper token redeem ~/public1.token
-Waiting for token status ...
-Token "public1-cad4f72d-2917-49b9-ab66-cdaca4d6cf9c" has been redeemed
+$ kubectl apply -f ~/public1.token
+accesstoken.skupper.io/public1-grant created
 ~~~
 
 If your terminal sessions are on different machines, you may need
@@ -320,7 +259,7 @@ to use `scp` or a similar tool to transfer the token securely.  By
 default, tokens expire after a single use or 15 minutes after
 being issued.
 
-## Step 7: Set up the demo
+## Step 6: Set up the demo
 
 On your local machine, make a directory for this tutorial and clone the example repo:
 
@@ -333,7 +272,7 @@ cd pg-demo
 git clone -b v2 https://github.com/skupperproject/skupper-example-postgresql.git
 ~~~
 
-## Step 8: Deploy the PostgreSQL service
+## Step 7: Deploy the PostgreSQL service
 
 After creating the application router network, deploy the PostgreSQL service.
 The **private1** cluster will be used to deploy the PostgreSQL server and the **public1** and **public2** clusters
@@ -342,36 +281,35 @@ will be used to enable client communications to the server on the **private1** c
 _**Private 1 cluster:**_
 
 ~~~ shell
-kubectl apply -f ~/pg-demo/skupper-example-postgresql/deployment-postgresql-svc.yaml
+kubectl apply -f ~/pg-demo/skupper-example-postgresql/kubernetes/private1/deployment-postgresql-svc.yaml
 ~~~
 
 _Sample output:_
 
 ~~~ console
-$ kubectl apply -f ~/pg-demo/skupper-example-postgresql/deployment-postgresql-svc.yaml
+$ kubectl apply -f ~/pg-demo/skupper-example-postgresql/kubernetes/private1/deployment-postgresql-svc.yaml
 secret/postgresql created
 deployment.apps/postgresql created
 ~~~
 
-## Step 9: Expose the PostgreSQL on the Virtual Application Network
+## Step 8: Expose the PostgreSQL on the Virtual Application Network
 
 Now that the PostgreSQL is running in the **private1** cluster, we need to expose it into your Virtual Application Network (VAN).
 
 _**Private 1 cluster:**_
 
 ~~~ shell
-skupper connector create postgresql 5432 --workload deployment/postgresql
+kubectl apply -f ~/pg-demo/skupper-example-postgresql/kubernetes/private1/connector.yaml
 ~~~
 
 _Sample output:_
 
 ~~~ console
-$ skupper connector create postgresql 5432 --workload deployment/postgresql
-Waiting for create to complete...
-Connector "postgresql" is configured.
+$ kubectl apply -f ~/pg-demo/skupper-example-postgresql/kubernetes/private1/connector.yaml
+connector.skupper.io/postgresql created
 ~~~
 
-## Step 10: Making the PostgreSQL database accessible to the public sites
+## Step 9: Making the PostgreSQL database accessible to the public sites
 
 In order to make the PostgreSQL database accessible to the **public1** and **public2** sites, we need to define a `Listener`
 on each site, which will produce a Kubernetes service on each cluster, connecting them with the database running on **private1** cluster.
@@ -379,32 +317,30 @@ on each site, which will produce a Kubernetes service on each cluster, connectin
 _**Public 1 cluster:**_
 
 ~~~ shell
-skupper listener create postgresql 5432
+kubectl apply -f ~/pg-demo/skupper-example-postgresql/kubernetes/public1/listener.yaml
 ~~~
 
 _Sample output:_
 
 ~~~ console
-$ skupper listener create postgresql 5432
-Waiting for create to complete...
-Listener "postgresql" is configured.
+$ kubectl apply -f ~/pg-demo/skupper-example-postgresql/kubernetes/public1/listener.yaml
+listener.skupper.io/postgresql created
 ~~~
 
 _**Public 2 cluster:**_
 
 ~~~ shell
-skupper listener create postgresql 5432
+kubectl apply -f ~/pg-demo/skupper-example-postgresql/kubernetes/public2/listener.yaml
 ~~~
 
 _Sample output:_
 
 ~~~ console
-$ skupper listener create postgresql 5432
-Waiting for create to complete...
-Listener "postgresql" is configured.
+$ kubectl apply -f ~/pg-demo/skupper-example-postgresql/kubernetes/public2/listener.yaml
+listener.skupper.io/postgresql created
 ~~~
 
-## Step 11: Create pod with PostgreSQL client utilities
+## Step 10: Create pod with PostgreSQL client utilities
 
 Create a pod named `pg-shell` on each of the public clusters. This pod will be used to
 communicate with the PostgreSQL database from **public1** and **public2** clusters.
@@ -451,7 +387,7 @@ $ kubectl run pg-shell --image quay.io/skupper/simple-pg \
 pod/pg-shell created
 ~~~
 
-## Step 12: Create a database, a table and insert values
+## Step 11: Create a database, a table and insert values
 
 Now that we can access the PostgreSQL database from both public sites, let's create a database called **markets**,
 then create a table named **product** and load it with some data.
@@ -479,7 +415,7 @@ INSERT 0 1
 INSERT 0 1
 ~~~
 
-## Step 13: Access the product table from any site
+## Step 12: Access the product table from any site
 
 Now that data has been added, try to read them from both the **public1** and **public2** sites.
 
@@ -504,21 +440,20 @@ _**Public 1 cluster:**_
 
 ~~~ shell
 kubectl delete pod pg-shell --now
-skupper site delete --all
+kubectl delete -f ~/pg-demo/skupper-example-postgresql/kubernetes/public1/
 ~~~
 
 _**Public 2 cluster:**_
 
 ~~~ shell
 kubectl delete pod pg-shell --now
-skupper site delete --all
+kubectl delete -f ~/public1.token -f ~/pg-demo/skupper-example-postgresql/kubernetes/public2/
 ~~~
 
 _**Private 1 cluster:**_
 
 ~~~ shell
-kubectl delete -f ~/pg-demo/skupper-example-postgresql/deployment-postgresql-svc.yaml
-skupper site delete --all
+kubectl delete -f ~/public1.token -f ~/pg-demo/skupper-example-postgresql/kubernetes/private1/
 ~~~
 
 ## Summary
