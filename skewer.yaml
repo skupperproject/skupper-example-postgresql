@@ -39,6 +39,16 @@ steps:
   - standard: platform/access_your_kubernetes_clusters
   - standard: platform/install_skupper_on_your_kubernetes_clusters
   - standard: platform/create_your_kubernetes_namespaces
+  - title: Set up the demo
+    preamble: |
+      On your local machine, make a directory for this tutorial and clone the example repo:
+    commands:
+      public1:
+        - run: |
+            cd ~/
+            mkdir pg-demo
+            cd pg-demo
+            git clone -b v2 https://github.com/skupperproject/skupper-example-postgresql.git
   - title: Create your sites
     preamble: |
       A Skupper _Site_ is a location where your application workloads
@@ -106,16 +116,6 @@ steps:
       to use `scp` or a similar tool to transfer the token securely.  By
       default, tokens expire after a single use or 15 minutes after
       being issued.
-  - title: Set up the demo
-    preamble: |
-      On your local machine, make a directory for this tutorial and clone the example repo:
-    commands:
-      public1:
-        - run: |
-            cd ~/
-            mkdir pg-demo
-            cd pg-demo
-            git clone -b v2 https://github.com/skupperproject/skupper-example-postgresql.git
   - title: Deploy the PostgreSQL service
     preamble: |
       After creating the application router network, deploy the PostgreSQL service.

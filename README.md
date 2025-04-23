@@ -20,9 +20,9 @@ across cloud providers, data centers, and edge sites.
 * [Step 1: Access your Kubernetes clusters](#step-1-access-your-kubernetes-clusters)
 * [Step 2: Install Skupper on your Kubernetes clusters](#step-2-install-skupper-on-your-kubernetes-clusters)
 * [Step 3: Create your Kubernetes namespaces](#step-3-create-your-kubernetes-namespaces)
-* [Step 4: Create your sites](#step-4-create-your-sites)
-* [Step 5: Link your sites](#step-5-link-your-sites)
-* [Step 6: Set up the demo](#step-6-set-up-the-demo)
+* [Step 4: Set up the demo](#step-4-set-up-the-demo)
+* [Step 5: Create your sites](#step-5-create-your-sites)
+* [Step 6: Link your sites](#step-6-link-your-sites)
 * [Step 7: Deploy the PostgreSQL service](#step-7-deploy-the-postgresql-service)
 * [Step 8: Expose the PostgreSQL on the Virtual Application Network](#step-8-expose-the-postgresql-on-the-virtual-application-network)
 * [Step 9: Making the PostgreSQL database accessible to the public sites](#step-9-making-the-postgresql-database-accessible-to-the-public-sites)
@@ -158,7 +158,20 @@ kubectl create namespace private1
 kubectl config set-context --current --namespace private1
 ~~~
 
-## Step 4: Create your sites
+## Step 4: Set up the demo
+
+On your local machine, make a directory for this tutorial and clone the example repo:
+
+_**Public 1 cluster:**_
+
+~~~ shell
+cd ~/
+mkdir pg-demo
+cd pg-demo
+git clone -b v2 https://github.com/skupperproject/skupper-example-postgresql.git
+~~~
+
+## Step 5: Create your sites
 
 A Skupper _Site_ is a location where your application workloads
 are running. Sites are linked together to form a network for your
@@ -195,7 +208,7 @@ _**Private 1 cluster:**_
 kubectl apply -f ~/pg-demo/skupper-example-postgresql/kubernetes/private1/site.yaml
 ~~~
 
-## Step 5: Link your sites
+## Step 6: Link your sites
 
 A Skupper _link_ is a channel for communication between two sites.
 Links serve as a transport for application connections and
@@ -257,19 +270,6 @@ If your terminal sessions are on different machines, you may need
 to use `scp` or a similar tool to transfer the token securely.  By
 default, tokens expire after a single use or 15 minutes after
 being issued.
-
-## Step 6: Set up the demo
-
-On your local machine, make a directory for this tutorial and clone the example repo:
-
-_**Public 1 cluster:**_
-
-~~~ shell
-cd ~/
-mkdir pg-demo
-cd pg-demo
-git clone -b v2 https://github.com/skupperproject/skupper-example-postgresql.git
-~~~
 
 ## Step 7: Deploy the PostgreSQL service
 
