@@ -42,6 +42,7 @@ jobs:
       - run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - run: |
           git submodule update --init --recursive
+          git submodule update --recursive --checkout --remote --init
           ./plano test
         env:
           PLANO_COLOR: 1

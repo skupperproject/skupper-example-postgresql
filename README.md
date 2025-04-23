@@ -31,6 +31,7 @@ across cloud providers, data centers, and edge sites.
 * [Step 12: Create a database, a table and insert values](#step-12-create-a-database-a-table-and-insert-values)
 * [Step 13: Access the product table from any site](#step-13-access-the-product-table-from-any-site)
 * [Cleaning up](#cleaning-up)
+* [Summary](#summary)
 * [Next steps](#next-steps)
 * [About this example](#about-this-example)
 
@@ -519,6 +520,19 @@ _**Private 1 cluster:**_
 kubectl delete -f ~/pg-demo/skupper-example-postgresql/deployment-postgresql-svc.yaml
 skupper site delete --all
 ~~~
+
+## Summary
+
+Through this example, we demonstrated how Skupper enables secure access to a PostgreSQL database hosted in a
+private Kubernetes cluster, without exposing it to the public internet.
+
+By deploying Skupper in each namespace, we established a **Virtual Application Network** (VAN), which allowed
+the PostgreSQL service to be securely shared across clusters. The database was made available exclusively within
+the VAN, enabling applications in the public1 and public2 clusters to access it seamlessly—as if it were running
+locally in their own namespaces.
+
+This approach not only simplifies multi-cluster communication but also preserves strict network boundaries,
+eliminating the need for complex VPNs or firewall changes.
 
 ## Next steps
 
