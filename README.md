@@ -415,13 +415,13 @@ Now that data has been added, try to read them from both the **public1** and **p
 _**Public 1 cluster:**_
 
 ~~~ shell
-kubectl exec -i pg-shell -- psql -d markets <<< "SELECT * FROM product;"
+echo "SELECT * FROM product;" | kubectl exec -i pg-shell -- psql -d markets
 ~~~
 
 _**Public 2 cluster:**_
 
 ~~~ shell
-kubectl exec -i pg-shell -- psql -d markets <<< "SELECT * FROM product;"
+echo "SELECT * FROM product;" | kubectl exec -i pg-shell -- psql -d markets
 ~~~
 
 ## Cleaning up

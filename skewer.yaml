@@ -193,9 +193,9 @@ steps:
       Now that data has been added, try to read them from both the **public1** and **public2** sites.
     commands:
       public1:
-        - run: kubectl exec -i pg-shell -- psql -d markets <<< "SELECT * FROM product;"
+        - run: echo "SELECT * FROM product;" | kubectl exec -i pg-shell -- psql -d markets
       public2:
-        - run: kubectl exec -i pg-shell -- psql -d markets <<< "SELECT * FROM product;"
+        - run: echo "SELECT * FROM product;" | kubectl exec -i pg-shell -- psql -d markets
   - title: Cleaning up
     name: cleaning_up
     preamble: |
