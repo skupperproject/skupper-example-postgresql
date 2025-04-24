@@ -41,8 +41,8 @@ jobs:
       - run: curl https://skupper.io/v2/install.sh | sh
       - run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - run: |
-          git submodule update --init --recursive
           git submodule update --recursive --checkout --remote --init
+          sed -i 's/ --bind-address localhost//g' external/skewer/python/skewer/main.py
           ./plano test
         env:
           PLANO_COLOR: 1

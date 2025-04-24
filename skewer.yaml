@@ -90,20 +90,19 @@ steps:
       have access to it.
     commands:
       "public1":
+        - run: kubectl wait --for=condition=ready site/public1 --timeout 300s
         - run: kubectl apply -f ~/pg-demo/skupper-example-postgresql/kubernetes/public1/accessgrant.yaml
-        - run: kubectl wait --for=condition=ready accessgrant/public1-grant
+        - run: kubectl wait --for=condition=ready accessgrant/public1-grant --timeout 300s
         - run: |
             kubectl get accessgrant public1-grant -o go-template-file=~/pg-demo/skupper-example-postgresql/kubernetes/token.template > ~/public1.token
       "public2":
         - run: kubectl apply -f ~/public1.token
           output: |
             accesstoken.skupper.io/token-public1-grant created
-        - run: kubectl wait --for=condition=ready link/token-public1-grant
       "private1":
         - run: kubectl apply -f ~/public1.token
           output: |
             accesstoken.skupper.io/token-public1-grant created
-        - run: kubectl wait --for=condition=ready link/token-public1-grant
     postamble: |
       If your terminal sessions are on different machines, you may need
       to use `scp` or a similar tool to transfer the token securely.  By
@@ -140,10 +139,12 @@ steps:
         - run: kubectl apply -f ~/pg-demo/skupper-example-postgresql/kubernetes/public1/listener.yaml
           output: |
             listener.skupper.io/postgresql created
+        - run: kubectl wait --for=condition=ready listener/postgresql --timeout 300s
       public2:
         - run: kubectl apply -f ~/pg-demo/skupper-example-postgresql/kubernetes/public2/listener.yaml
           output: |
             listener.skupper.io/postgresql created
+        - run: kubectl wait --for=condition=ready listener/postgresql --timeout 300s
   - title: Create pod with PostgreSQL client utilities
     preamble: |
       Create a pod named `pg-shell` on each of the public clusters. This pod will be used to

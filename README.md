@@ -226,8 +226,9 @@ have access to it.
 _**Public 1 cluster:**_
 
 ~~~ shell
+kubectl wait --for=condition=ready site/public1 --timeout 300s
 kubectl apply -f ~/pg-demo/skupper-example-postgresql/kubernetes/public1/accessgrant.yaml
-kubectl wait --for=condition=ready accessgrant/public1-grant
+kubectl wait --for=condition=ready accessgrant/public1-grant --timeout 300s
 kubectl get accessgrant public1-grant -o go-template-file=~/pg-demo/skupper-example-postgresql/kubernetes/token.template > ~/public1.token
 ~~~
 
@@ -235,7 +236,6 @@ _**Public 2 cluster:**_
 
 ~~~ shell
 kubectl apply -f ~/public1.token
-kubectl wait --for=condition=ready link/token-public1-grant
 ~~~
 
 _Sample output:_
@@ -249,7 +249,6 @@ _**Private 1 cluster:**_
 
 ~~~ shell
 kubectl apply -f ~/public1.token
-kubectl wait --for=condition=ready link/token-public1-grant
 ~~~
 
 _Sample output:_
@@ -310,6 +309,7 @@ _**Public 1 cluster:**_
 
 ~~~ shell
 kubectl apply -f ~/pg-demo/skupper-example-postgresql/kubernetes/public1/listener.yaml
+kubectl wait --for=condition=ready listener/postgresql --timeout 300s
 ~~~
 
 _Sample output:_
@@ -323,6 +323,7 @@ _**Public 2 cluster:**_
 
 ~~~ shell
 kubectl apply -f ~/pg-demo/skupper-example-postgresql/kubernetes/public2/listener.yaml
+kubectl wait --for=condition=ready listener/postgresql --timeout 300s
 ~~~
 
 _Sample output:_
